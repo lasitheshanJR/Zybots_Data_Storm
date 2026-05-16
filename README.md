@@ -1,51 +1,48 @@
-Latent Outlet Potential Estimation Framework
-Overview
+# Latent Outlet Potential Estimation Framework
 
-This project was developed for the OCTAVE – John Keells Group data science challenge.
-The objective is to estimate the Maximum Monthly Purchase Potential (latent demand) for traditional trade beverage outlets in Sri Lanka.
+## Overview
 
-The framework combines:
+This project was developed for the OCTAVE – John Keells Group Data Science Challenge.
 
-Data Engineering (Bronze → Silver → Gold pipeline)
-Data Cleaning & Forensics
-Feature Engineering
-Latent Demand Estimation
-Machine Learning-based Potential Prediction
-Problem Statement
+The objective is to estimate the latent maximum monthly beverage purchase potential for traditional trade outlets across Sri Lanka using transactional, operational, seasonal, and geospatial signals.
 
-Historical sales do not represent true outlet demand because observed sales may be constrained by:
+The solution follows a Lakehouse-style architecture consisting of:
+- Bronze Layer (Raw Data)
+- Silver Layer (Cleaned Data)
+- Gold Layer (Feature Engineered Data)
 
-stockouts
-credit limitations
-delivery capacity
-operational inefficiencies
+The framework includes:
+- Data cleaning and validation
+- Feature engineering
+- Seasonal signal generation
+- Latent demand estimation
+- Machine learning-based potential prediction
 
-Observed sales are treated as:
+---
 
-Y
-observed
-	​
+# Problem Statement
 
-=min(Y
-potential
-	​
+Historical sales are not equivalent to true demand.
 
-,C)
+Observed outlet sales may be constrained by:
+- stockouts
+- delivery limitations
+- cooler shortages
+- operational inefficiencies
+- credit restrictions
 
-Where:
+Therefore:
 
-Y
-potential
-	​
+Y_observed = min(Y_potential, Constraints)
 
- = true latent demand
-C = operational/system constraints
+The goal is to estimate the uncapped latent monthly demand ceiling for each outlet.
 
-The goal is to estimate uncapped monthly purchase potential for each outlet.
+---
 
-Project Structure
+# Project Structure
+
 project_root/
-│
+
 ├── data/
 │   ├── bronze/
 │   │   ├── transactions_history_final.csv
@@ -66,160 +63,159 @@ project_root/
 ├── notebooks/
 │   ├── 01_data_cleaning.ipynb
 │   ├── 02_feature_engineering.ipynb
-│   ├── 03_modeling.ipynb
+│   ├── 03_model_training.ipynb
 │   └── 04_evaluation.ipynb
 │
 ├── reports/
-│   └── final_report.pdf
+│   └── summary_report.pdf
 │
 ├── requirements.txt
 └── README.md
-Pipeline Architecture
-Bronze Layer
 
-Raw datasets are ingested without modification.
+---
 
-Input Datasets
-transactions_history_final.csv
-outlet_master.csv
-outlet_location.csv
-distributor_seasonality_details.csv
-holiday_list.csv
-Silver Layer
+# Bronze Layer
 
-Data cleaning and validation layer.
+The Bronze layer stores raw source files without any modifications.
 
-Implemented Data Quality Checks
-Duplicate detection
-Null validation
-Numeric range validation
-Latitude/longitude validation
-Data type standardization
-Category normalization
-Examples of Detected Issues
-Duplicate transaction rows
-Negative sales quantities
-Invalid geo-coordinates
-Inconsistent outlet categories
-Missing values
+Datasets used:
+- transactions_history_final.csv
+- outlet_master.csv
+- outlet_location.csv
+- distributor_seasonality_details.csv
+- holiday_list.csv
 
-Invalid records were quarantined into:
+---
 
-silver/rejected_records/
-Gold Layer
+# Silver Layer
 
-Feature-engineered analytical dataset for modeling.
+The Silver layer performs data cleaning, validation, and standardization.
 
-Engineered Features
-Monthly outlet sales
-SKU diversity
-Cooler count
-Holiday counts
-Seasonality index
-Average distributor sales
-Outlet operational indicators
-Feature Engineering
-Sales Features
-Total monthly liters
-Average sales
-Maximum historical sales
-Sales variability
-Product Features
-Unique SKU count
-Product diversity
-Operational Features
-Cooler count
-Outlet type
-Outlet size
-Seasonal Features
-Seasonality index
-Holiday count
-Poya day count
-Modeling Approach
-Latent Demand Logic
+## Data Quality Checks
 
-Observed sales are treated as censored demand.
+Implemented reusable validation functions for:
+- duplicate detection
+- null validation
+- type validation
+- value range checks
+- coordinate validation
+- category standardization
+
+## Key Data Issues Identified
+
+- duplicate transaction rows
+- invalid latitude and longitude values
+- negative sales quantities
+- inconsistent outlet categories
+- missing seasonal records
+
+Rejected records were quarantined separately with failure reasons.
+
+---
+
+# Gold Layer
+
+The Gold layer contains model-ready analytical datasets.
+
+## Engineered Features
+
+### Sales Features
+- monthly outlet volume
+- average sales
+- historical peak sales
+- sales variability
+
+### Product Features
+- SKU diversity
+- transaction frequency
+
+### Operational Features
+- cooler count
+- outlet size
+- outlet type
+
+### Seasonal Features
+- holiday count
+- seasonality index
+- distributor monthly trend
+
+---
+
+# Holiday Feature Engineering
+
+Holiday records were aggregated into monthly signals using:
+- Holiday_Count
+- Public_Holiday_Count
+- Poya_Count
+
+These features were merged into the outlet-month analytical dataset.
+
+---
+
+# Modeling Approach
+
+## Latent Demand Estimation
+
+Observed sales were treated as censored demand rather than true demand.
 
 Potential demand was estimated using:
+- historical outlet peak behavior
+- peer outlet performance
+- operational capacity indicators
+- seasonal demand signals
 
-Historical peak behavior
-Peer outlet patterns
-Engineered operational signals
-Machine Learning Model
-Algorithms Tested
-Random Forest Regressor
-LightGBM Regressor
-Final Prediction Target
-Maximum_Monthly_Liters
-Evaluation Strategy
+## Machine Learning Models
 
-Since no true ground-truth target exists, evaluation was performed using:
+Models evaluated:
+- Random Forest Regressor
+- LightGBM Regressor
 
-Proxy consistency metrics
-Relative regression performance
-Business-rule validation
-Prediction stability checks
-Metrics Used
-R² Score
-Mean Absolute Error (MAE)
-Business Validation Checks
-Predicted potential ≥ observed sales
-Higher cooler counts correspond to higher potential
-Similar outlets show stable predictions
-POI Enrichment Strategy
+Final prediction target:
+- Maximum_Monthly_Liters
+
+---
+
+# Evaluation Strategy
+
+Since no true ground-truth target exists, evaluation focused on:
+- proxy consistency
+- business-rule validation
+- stability analysis
+- relative regression performance
+
+## Metrics Used
+
+- R² Score
+- Mean Absolute Error (MAE)
+
+## Business Validation Checks
+
+- predicted potential >= observed sales
+- outlets with more coolers should show higher potential
+- similar outlets should produce stable predictions
+
+---
+
+# POI Enrichment Strategy
 
 External geospatial signals were considered using:
-
-OpenStreetMap
-Overpass API
+- OpenStreetMap
+- Overpass API
 
 Targeted POIs:
-
-Schools
-Hospitals
-Bus stands
-Markets
-Tourist locations
+- schools
+- hospitals
+- bus stands
+- markets
+- tourist locations
 
 These were treated as catchment-demand proxies.
 
-How to Run
-1. Install Dependencies
+---
+
+# How to Run
+
+## Install Dependencies
+
+```bash
 pip install -r requirements.txt
-2. Run Data Cleaning
-python notebooks/01_data_cleaning.ipynb
-3. Run Feature Engineering
-python notebooks/02_feature_engineering.ipynb
-4. Run Modeling Pipeline
-python notebooks/03_modeling.ipynb
-5. Generate Final Predictions
-python notebooks/04_evaluation.ipynb
-Final Output
-
-Generated submission file:
-
-final_predictions.csv
-
-Format:
-
-Outlet_ID	Maximum_Monthly_Liters
-Generative AI Usage
-
-LLMs including ChatGPT were used for:
-
-brainstorming modeling strategies
-debugging pipeline issues
-generating boilerplate code
-improving feature engineering logic
-documentation refinement
-
-All generated outputs were manually validated and refined before use.
-
-Technologies Used
-Python
-Pandas
-NumPy
-Scikit-learn
-LightGBM
-Matplotlib
-OpenStreetMap APIs
